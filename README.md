@@ -5,17 +5,21 @@ signed repository they are published as.
 
 ```console
 $ haven plugin repo add https://github.com/haven-terminal/plugins.git \
-      --key '2F10 059C F663 6B15 0B95 8486 7D04 983E 5D12 A3E4'
+      --key 'E65C E6E3 0BFB 86BD FC42 35D4 A8F1 399B 75B7 E0D0'
 $ haven plugin repo update
 $ haven plugin search
 ```
 
-That fingerprint is the thing worth checking, and checking it against
-*this page* is weaker than checking it anywhere else — it is also in
-`haven-repo.pub` on every Haven release and in the [pacman repository
-instructions](https://github.com/haven-terminal/Haven/blob/master/packaging/README.md),
-because a fingerprint that only ever appears beside the thing it signs is
-one nobody has verified.
+That fingerprint is the thing worth checking — and it is worth knowing
+what checking it *here* is worth, which is not much. A fingerprint that
+only ever appears beside the thing it signs is one nobody has verified:
+whoever could replace the index could replace this page. Compare it
+against a source that did not reach you the same way, if there is one.
+
+This is a key of its own, not the one that signs Haven's releases and
+packages. Separate on purpose: these artifacts are built from a different
+repository by a different workflow, and a key that can sign a plugin
+should not also be able to sign a release.
 
 Leave `--key` out and Haven imports the key from here and shows it to you
 to accept. It is pinned from then on, so only the first contact was ever
