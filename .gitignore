@@ -2,3 +2,7 @@
 /checks/target
 # What publish.sh builds into.
 /build/
+
+# Regenerated against the SDK as a git dependency. A lockfile made with
+# a local path override would pin a source that nobody else has.
+Cargo.lock
