@@ -18,9 +18,9 @@ license = "MIT OR Apache-2.0"
 # branch, because a plugin built against a world that moved underneath it
 # is the one failure mode nobody would think to look for.
 #
-# Until there is a tag carrying it, this tracks `master`. Change it to
-# `tag = "v0.0.5"` the moment one exists.
-haven-plugin-api = { git = "https://github.com/haven-terminal/Haven", branch = "master" }
+# Bump the tag to move to a newer world, deliberately and visibly, in a
+# commit that says so.
+haven-plugin-api = { git = "https://github.com/haven-terminal/Haven", tag = "v0.0.5" }
 
 # Small, because every byte is downloaded by whoever installs it and a
 # plugin is a page of logic.

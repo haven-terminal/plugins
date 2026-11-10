@@ -14,5 +14,5 @@ publish = false
 # The runtime, from the repository that owns it. These tests load the
 # real components into the real host with the real capability checks —
 # there is no mock, because a mock of a sandbox proves nothing.
-haven-plugin-host = { git = "https://github.com/haven-terminal/Haven", branch = "master" }
-haven-plugin = { git = "https://github.com/haven-terminal/Haven", branch = "master" }
+haven-plugin-host = { git = "https://github.com/haven-terminal/Haven", tag = "v0.0.5" }
+haven-plugin = { git = "https://github.com/haven-terminal/Haven", tag = "v0.0.5" }
