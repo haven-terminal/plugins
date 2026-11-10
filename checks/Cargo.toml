@@ -1,0 +1,18 @@
+[package]
+name = "checks"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Its own workspace, deliberately. Everything in `useful/` is built for
+# `wasm32-wasip2`; this is built for the machine it runs on, and a
+# `cargo build --target wasm32-wasip2` at the root must not try to
+# compile a wasmtime host for wasm.
+[workspace]
+
+[dev-dependencies]
+# The runtime, from the repository that owns it. These tests load the
+# real components into the real host with the real capability checks —
+# there is no mock, because a mock of a sandbox proves nothing.
+haven-plugin-host = { git = "https://github.com/haven-terminal/Haven", branch = "master" }
+haven-plugin = { git = "https://github.com/haven-terminal/Haven", branch = "master" }

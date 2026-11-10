@@ -1,0 +1,32 @@
+# The plugins, each one a WebAssembly component.
+#
+# Globs, so adding a plugin is adding a directory: several people writing
+# plugins at once must not all be editing this one file.
+[workspace]
+resolver = "2"
+members = ["useful/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+# The SDK and the WIT world live with the runtime that has to agree with
+# them, in the main repository. A git dependency rather than a path, so
+# this repository stands on its own — and pinned to a tag rather than a
+# branch, because a plugin built against a world that moved underneath it
+# is the one failure mode nobody would think to look for.
+#
+# Until there is a tag carrying it, this tracks `master`. Change it to
+# `tag = "v0.0.5"` the moment one exists.
+haven-plugin-api = { git = "https://github.com/haven-terminal/Haven", branch = "master" }
+
+# Small, because every byte is downloaded by whoever installs it and a
+# plugin is a page of logic.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

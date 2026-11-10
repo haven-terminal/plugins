@@ -1,2 +1,4 @@
-# The staging directory the workflow builds into.
+/target
+/checks/target
+# What publish.sh builds into.
 /build/
