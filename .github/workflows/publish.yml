@@ -1,0 +1,113 @@
+name: publish
+
+# Builds every plugin from the main repository, signs the index, and
+# commits the result here.
+#
+# Run by hand, or by Haven's own release once it is wired to dispatch
+# this. Deliberately not on push: this workflow commits to `main`, and a
+# workflow that commits to the branch that triggers it is a loop.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Which Haven ref to build the plugins from'
+        required: false
+        default: 'master'
+  repository_dispatch:
+    types: [publish-plugins]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The sources live in the main repository, with the WIT world and
+      # the SDK they are built against. Checking them out here rather
+      # than copying them means the two cannot drift.
+      - uses: actions/checkout@v4
+        with:
+          repository: haven-terminal/Haven
+          ref: ${{ github.event.inputs.ref || 'master' }}
+          path: haven
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: haven/plugins
+
+      - name: Import the signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          if [ -z "${GPG_PRIVATE_KEY:-}" ] || [ -z "${GPG_PASSPHRASE:-}" ]; then
+            echo "::error::The index is signed, and that needs both the" >&2
+            echo "GPG_PRIVATE_KEY and GPG_PASSPHRASE secrets on this" >&2
+            echo "repository or its organisation." >&2
+            exit 1
+          fi
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          fpr=$(gpg --with-colons --list-secret-keys | awk -F: '/^fpr:/ {print $10; exit}')
+          echo "FINGERPRINT=$fpr" >> "$GITHUB_ENV"
+          # Non-interactive signing: there is no terminal to ask on.
+          # Written with printf rather than a heredoc, because a heredoc
+          # inside a YAML block scalar depends on two different
+          # indentation rules agreeing.
+          mkdir -p "$HOME/.gnupg"
+          printf 'batch
+pinentry-mode loopback
+' >> "$HOME/.gnupg/gpg.conf"
+          printf '%s' "$GPG_PASSPHRASE" > "$HOME/.passphrase"
+          chmod 600 "$HOME/.passphrase"
+
+      - name: Build and sign
+        run: |
+          set -eu
+          rm -rf build && mkdir build
+          # Unsigned first: `publish.sh` only signs when given a
+          # fingerprint, and the passphrase has to reach gpg through a
+          # file rather than a prompt.
+          haven/plugins/publish.sh "$PWD/build"
+          gpg --batch --yes --armor --export "$FINGERPRINT" > build/key.asc
+          gpg --batch --yes --pinentry-mode loopback \
+              --passphrase-file "$HOME/.passphrase" \
+              --detach-sign --armor --local-user "$FINGERPRINT" \
+              -o build/plugins.yaml.sig build/plugins.yaml
+          gpg --verify build/plugins.yaml.sig build/plugins.yaml
+
+      # Checked the way a user will, before anything is committed: a
+      # repository that does not verify should never reach `main`.
+      - name: Verify it the way a user would
+        run: |
+          set -eu
+          cargo build --release --manifest-path haven/Cargo.toml -p haven
+          haven/target/release/haven plugin repo add "$PWD/build" \
+              --key "$FINGERPRINT" --name check --root "$PWD/try"
+          haven/target/release/haven plugin --root "$PWD/try" search
+          count=$(haven/target/release/haven plugin --root "$PWD/try" search \
+                  | grep -cE '^[a-z]' || true)
+          [ "$count" -gt 0 ] || { echo "::error::the index lists nothing" >&2; exit 1; }
+          echo "$count plugins verified"
+
+      - name: Commit
+        run: |
+          set -eu
+          rm -rf pool plugins.yaml plugins.yaml.sig key.asc
+          cp -r build/pool build/plugins.yaml build/plugins.yaml.sig build/key.asc .
+          rm -rf build try
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          built=$(cd haven && git rev-parse --short HEAD)
+          git commit -m "Publish the plugins from Haven $built"
+          git push

@@ -1,0 +1,2 @@
+# The staging directory the workflow builds into.
+/build/
