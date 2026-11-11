@@ -130,7 +130,10 @@ fn parse(text: &str) -> Option<Reading> {
     if matches!(*size, "-" | "0" | "0B" | "0K") {
         return Some(Reading::Unmeasured);
     }
-    Some(Reading::Space { free: humanly(free), used })
+    Some(Reading::Space {
+        free: humanly(free),
+        used,
+    })
 }
 
 /// `df`'s free-space field, as something to print.
@@ -148,7 +151,9 @@ fn humanly(field: &str) -> String {
     // In tenths of a unit, and in integers throughout: `f64` parsing and
     // formatting is tens of kilobytes in a component that somebody has to
     // download, and this is two divisions.
-    let Ok(blocks) = field.parse::<u64>() else { return field.to_string() };
+    let Ok(blocks) = field.parse::<u64>() else {
+        return field.to_string();
+    };
     let units = ['K', 'M', 'G', 'T'];
     let mut tenths = blocks.saturating_mul(10);
     let mut unit = 0;

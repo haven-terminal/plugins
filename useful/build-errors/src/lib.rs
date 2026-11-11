@@ -196,13 +196,24 @@ fn count_in(pane: u32) {
     let text = match host::pane_text(pane, ROWS) {
         Ok(text) => text,
         Err(why) => {
-            TALLY
-                .with(|cell| *cell.borrow_mut() = Tally { refused: Some(why), ..Tally::default() });
+            TALLY.with(|cell| {
+                *cell.borrow_mut() = Tally {
+                    refused: Some(why),
+                    ..Tally::default()
+                }
+            });
             return;
         }
     };
     let (errors, warnings) = counted(&text);
-    TALLY.with(|cell| *cell.borrow_mut() = Tally { pane, errors, warnings, refused: None });
+    TALLY.with(|cell| {
+        *cell.borrow_mut() = Tally {
+            pane,
+            errors,
+            warnings,
+            refused: None,
+        }
+    });
 }
 
 /// Errors and warnings in some rows of build output.
@@ -236,7 +247,11 @@ fn is_summary(line: &str) -> bool {
     }
     // Cargo's own closing lines. Each is a report that the build failed,
     // which the errors above it already said.
-    for closer in ["error: build failed", "error: test failed", "error: process didn't exit"] {
+    for closer in [
+        "error: build failed",
+        "error: test failed",
+        "error: process didn't exit",
+    ] {
         if line.starts_with(closer) {
             return true;
         }
@@ -263,7 +278,9 @@ fn is_summary(line: &str) -> bool {
 /// rustc and cargo. `Some(true)` is an error, `Some(false)` a warning.
 fn rust_kind(line: &str) -> Option<bool> {
     for (word, error) in [("error", true), ("warning", false)] {
-        let Some(rest) = line.strip_prefix(word) else { continue };
+        let Some(rest) = line.strip_prefix(word) else {
+            continue;
+        };
         // `error[E0308]:` as well as `error:`.
         let rest = if let Some(after) = rest.strip_prefix('[') {
             match after.split_once(']') {
@@ -282,7 +299,11 @@ fn rust_kind(line: &str) -> Option<bool> {
 
 /// gcc and clang: `file.c:12:5: error: …`.
 fn cc_kind(line: &str) -> Option<bool> {
-    for (needle, error) in [(": fatal error:", true), (": error:", true), (": warning:", false)] {
+    for (needle, error) in [
+        (": fatal error:", true),
+        (": error:", true),
+        (": warning:", false),
+    ] {
         if let Some(at) = line.find(needle) {
             if is_a_place(&line[..at]) {
                 return Some(error);
@@ -311,7 +332,9 @@ fn is_failure(line: &str) -> bool {
     // go's `--- FAIL: TestThing (0.00s)`.
     let line = line.strip_prefix("--- ").unwrap_or(line);
     for word in ["FAILED", "FAIL"] {
-        let Some(rest) = line.strip_prefix(word) else { continue };
+        let Some(rest) = line.strip_prefix(word) else {
+            continue;
+        };
         let rest = rest.trim_start_matches([':', '.', ' ', '\t']);
         // A bare `FAIL` with nothing after it is go's verdict on the
         // package, not another failing test.

@@ -64,7 +64,9 @@ struct Marker;
 
 impl Plugin for Marker {
     fn render() -> Vec<Run> {
-        let Some(pane) = focused() else { return Vec::new() };
+        let Some(pane) = focused() else {
+            return Vec::new();
+        };
         let found = remote(&pane.command).or_else(|| remote(&pane.title));
         match found {
             None => Vec::new(),
@@ -129,9 +131,14 @@ fn destination<'a>(words: &[&'a str]) -> Option<&'a str> {
 fn host_of(destination: &str) -> String {
     let host = destination.rsplit('@').next().unwrap_or(destination);
     // `ssh://user@host:port` arrives occasionally.
-    let host = host.trim_start_matches('/').split(':').next().unwrap_or(host);
-    let numeric =
-        host.split('.').all(|label| !label.is_empty() && label.chars().all(|c| c.is_ascii_digit()));
+    let host = host
+        .trim_start_matches('/')
+        .split(':')
+        .next()
+        .unwrap_or(host);
+    let numeric = host
+        .split('.')
+        .all(|label| !label.is_empty() && label.chars().all(|c| c.is_ascii_digit()));
     if numeric || !host.contains('.') {
         return shorten(host);
     }

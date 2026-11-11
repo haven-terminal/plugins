@@ -6,7 +6,7 @@ plugins:
     version: 0.1.0
     summary: errors and warnings in what the build just printed
     file: pool/build-errors-0.1.0.tar.gz
-    sha256: 8cc757195d0004943e89a793b6f645280393c6978949d5344fcab403c8836572
+    sha256: 2875d9ee1dc3a23ae73cab8b7369532425668a98f13c75dfd0f4a6ee691b33ec
     entry: build_errors.wasm
     events: [command-began, command-ended, pane-focus]
     capabilities:
@@ -15,13 +15,13 @@ plugins:
     version: 0.1.0
     summary: the time, on the status bar
     file: pool/clock-0.1.0.tar.gz
-    sha256: 783b0d64db349f4c0f704c6a25b8b02da5bf1ca512d0aa6c872e6256795c0081
+    sha256: 3a3b8e933220896b12cbb3179482b7d2f1d6df10afb9568ae50f10db8970388c
     entry: clock.wasm
   - name: command-timer
     version: 0.1.0
     summary: how long the last command took, when it took long enough to matter
     file: pool/command-timer-0.1.0.tar.gz
-    sha256: d65fd2116c30e3b574973929db8b2fddd0daec729bad28c0fd87012030fd4115
+    sha256: b7b80ca55fe5f76fde6f2bb1c4a08df356ed00491f26c23f89e4037c0315f5a3
     entry: command_timer.wasm
     events: [command-ended]
     capabilities:
@@ -30,7 +30,7 @@ plugins:
     version: 0.1.0
     summary: the focused pane's directory, one letter per component
     file: pool/cwd-crumbs-0.1.0.tar.gz
-    sha256: 1aacf9a553e4e27e34b44a267c60076df6e702bfd433fb41e5a63a7bc5046085
+    sha256: 26ddaec5ed283ea0fa53fbde7f13e32659406ed4939eead63c07db41177b876b
     entry: cwd_crumbs.wasm
     events: []
     capabilities:
@@ -42,7 +42,7 @@ plugins:
     version: 0.1.0
     summary: free space on the filesystem holding the focused pane's directory
     file: pool/disk-free-0.1.0.tar.gz
-    sha256: 8825820b4f4a857675bd4a40e80cec20aa02c46c72e969d830b333cccccefbac
+    sha256: a1833bb0cceb973dcf7129a5ac63adfd38239353a5a52b6831bcfb7f0cec403a
     entry: disk_free.wasm
     events: [started, pane-focus, cwd-changed, tick]
     capabilities:
@@ -51,25 +51,43 @@ plugins:
     version: 0.1.0
     summary: how many containers are running, and nothing at all when none can be
     file: pool/docker-status-0.1.0.tar.gz
-    sha256: 850e3d46a0b6ca47838fbe955af779af0f05e3626c0599d39910e8a15fdb2317
+    sha256: 634a1b5e042fa35187daa095a389244dd2fa217de7ede7c2f71dec47ae9b5669
     entry: docker_status.wasm
     events: [started, tick]
     capabilities:
       exec: [docker, podman]
+  - name: env-file
+    version: 0.1.0
+    summary: says when the directory you walked into has a .env in it
+    file: pool/env-file-0.1.0.tar.gz
+    sha256: 6e110a0d22d6a089f8416d681254bb445ac82335769720d3a9bb519acc51e3cb
+    entry: env_file.wasm
+    events: [started, pane-focus, cwd-changed]
+    capabilities:
+      exec: [stat]
   - name: fail-watch
     version: 0.1.0
     summary: says when a command failed, and what the exit status meant
     file: pool/fail-watch-0.1.0.tar.gz
-    sha256: 5a942e6b949a7753580ba111d770d3173d56cc87bdea9e4cfc63a0434effbf00
+    sha256: 99a01dbea5b083924182222161fb0c5aa2a5183b09d77cc6f622eeb1c3b98183
     entry: fail_watch.wasm
     events: [command-ended]
     capabilities:
       read-pane-content: false
+  - name: gitline
+    version: 0.1.0
+    summary: the branch, whether it is dirty, and how far it has drifted
+    file: pool/gitline-0.1.0.tar.gz
+    sha256: d2d3e4e1b31e9f742f6108f0ae16db41d397b2b8c6cd2889e552a2c44a8d2b68
+    entry: gitline.wasm
+    events: [started, pane-focus, cwd-changed, command-ended, tick]
+    capabilities:
+      exec: [git]
   - name: git-stash
     version: 0.1.0
     summary: how many stashes are hiding, when there are any
     file: pool/git-stash-0.1.0.tar.gz
-    sha256: a394fa61adf3abad25af72bd0794de924a28f279bab6c7801ee8098dddef8180
+    sha256: 1b3776742c376054eacedee6f1c8ebac04f54036a4209b9f61a3c9f26670b2a2
     entry: git-stash.wasm
     events: [started, pane-focus, cwd-changed, command-ended, tick]
     capabilities:
@@ -78,17 +96,8 @@ plugins:
     version: 0.1.0
     summary: how many lines of uncommitted work are sitting in the tree
     file: pool/git-wip-0.1.0.tar.gz
-    sha256: 3da6fa6c73a46c631e4f480e1bef15b602aa08bcf42fffd362717a39d1271c45
+    sha256: af439bf340040b8cf12cb7eac53415b358e1f7fd0616335db949b1acafb5fdf9
     entry: git-wip.wasm
-    events: [started, pane-focus, cwd-changed, command-ended, tick]
-    capabilities:
-      exec: [git]
-  - name: gitline
-    version: 0.1.0
-    summary: the branch, whether it is dirty, and how far it has drifted
-    file: pool/gitline-0.1.0.tar.gz
-    sha256: e40f817d691e818bc00e8a442abb8313a89369847f11ae8352982b47d8b4bc30
-    entry: gitline.wasm
     events: [started, pane-focus, cwd-changed, command-ended, tick]
     capabilities:
       exec: [git]
@@ -96,7 +105,7 @@ plugins:
     version: 0.1.0
     summary: the one-minute load average, bold when it exceeds the core count
     file: pool/load-average-0.1.0.tar.gz
-    sha256: bbcf02eb37fc87bfc7f9a7a767328ae2ad26a4b392a8dcb8ca54838593253f45
+    sha256: 085f4aaded0d40eb15151eb64cb25365838ea431360085fe4b78502df9edc5d0
     entry: load_average.wasm
     events: [started, tick]
     capabilities:
@@ -105,7 +114,7 @@ plugins:
     version: 0.1.0
     summary: a 25/5 work and break timer on the status bar, driven by ticks
     file: pool/pomodoro-0.1.0.tar.gz
-    sha256: c9640d56816872399e34fa43fc56e5a2fef14853a95b94421fcdc72263676d26
+    sha256: c0c651bbae5abffcd9a36f281f484ec2365546ee6a4cf8a7e15a852f0576020f
     entry: pomodoro.wasm
     events: [timer:2s]
     capabilities:
@@ -114,7 +123,7 @@ plugins:
     version: 0.1.0
     summary: the Python environment the focused pane's path implies
     file: pool/python-venv-0.1.0.tar.gz
-    sha256: 880dcabd73999067b8528ba9ca9483648e9d47203fcedaef2d5b7e216a269987
+    sha256: ef781109dde2682caa020e47b38a981dfb9da243d72a7f57779afedfc6844971
     entry: python_venv.wasm
     events: []
     capabilities:
@@ -126,7 +135,7 @@ plugins:
     version: 0.1.0
     summary: warns when something shaped like a credential has just been printed
     file: pool/secret-guard-0.1.0.tar.gz
-    sha256: 7d7f58d761061d783d7f07b2956fe71dbca0a22c34172f7ed514ddb72985e28b
+    sha256: 23e583e6128465fc2152fe970d8c38d085e4b03f7464b689ba7a24b1d4acad5a
     entry: secret_guard.wasm
     events: [command-ended]
     capabilities:
@@ -135,7 +144,7 @@ plugins:
     version: 0.1.0
     summary: marks the status bar when the focused pane is on another machine
     file: pool/ssh-marker-0.1.0.tar.gz
-    sha256: d7c960d2e58ca2451984e3cbba746399e3b2aceab50e9fb06f038bd4fee6601c
+    sha256: 3034c2dda052171af9ef3d76f4783d30f0dd7ff213aaea4d73e577ae9beb7ffa
     entry: ssh_marker.wasm
     events: []
     capabilities:
@@ -147,7 +156,7 @@ plugins:
     version: 0.1.0
     summary: how many links are on the screen, and the last one of them
     file: pool/url-hints-0.1.0.tar.gz
-    sha256: d012201e3486b3b52ee8f31d16f67869a78704a120528db9e282566dd99c282f
+    sha256: c6e61f036124bf0f980f159a97fd31731484714248e1999c4c9e292b93c892fc
     entry: url_hints.wasm
     events: [command-ended, pane-focus]
     capabilities:

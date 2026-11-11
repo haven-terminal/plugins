@@ -102,7 +102,12 @@ fn ask() -> Reading {
     let mut refusal = None;
     for engine in ENGINES {
         match output_of(&[engine, "ps", "--format", "{{.Names}}"]) {
-            Ok(text) => return Reading::Running { engine, count: names(&text) },
+            Ok(text) => {
+                return Reading::Running {
+                    engine,
+                    count: names(&text),
+                }
+            }
             Err(why) => {
                 // A capability we were not granted is worth telling the
                 // user about; a program that is not installed, or a

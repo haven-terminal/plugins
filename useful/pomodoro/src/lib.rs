@@ -102,7 +102,11 @@ impl Plugin for Pomodoro {
         match event {
             // A first run has nothing in the store, and writing the
             // starting state here means `render` never has to invent one.
-            Event::Started => vec![save(&State { phase: Phase::Work, ticks: 0, done: 0 })],
+            Event::Started => vec![save(&State {
+                phase: Phase::Work,
+                ticks: 0,
+                done: 0,
+            })],
             Event::Tick => {
                 let mut state = load();
                 state.ticks += 1;
@@ -135,14 +139,32 @@ fn advance(state: &State) -> (State, String) {
         Phase::Work => {
             let done = state.done + 1;
             if done % BEFORE_LONG == 0 {
-                (State { phase: Phase::Long, ticks: 0, done }, "four done — take 15".into())
+                (
+                    State {
+                        phase: Phase::Long,
+                        ticks: 0,
+                        done,
+                    },
+                    "four done — take 15".into(),
+                )
             } else {
-                (State { phase: Phase::Break, ticks: 0, done }, "time's up — take 5".into())
+                (
+                    State {
+                        phase: Phase::Break,
+                        ticks: 0,
+                        done,
+                    },
+                    "time's up — take 5".into(),
+                )
             }
         }
         // A break ending always leads back to work, long or not.
         Phase::Break | Phase::Long => (
-            State { phase: Phase::Work, ticks: 0, done: state.done },
+            State {
+                phase: Phase::Work,
+                ticks: 0,
+                done: state.done,
+            },
             "break over — back to it".into(),
         ),
     }
@@ -163,8 +185,14 @@ fn save(state: &State) -> Command {
 /// written, and starting a new pomodoro is a better answer to a value we
 /// do not understand than a blank status bar.
 fn load() -> State {
-    let fresh = State { phase: Phase::Work, ticks: 0, done: 0 };
-    let Some(value) = host::recall(STATE) else { return fresh };
+    let fresh = State {
+        phase: Phase::Work,
+        ticks: 0,
+        done: 0,
+    };
+    let Some(value) = host::recall(STATE) else {
+        return fresh;
+    };
     let mut parts = value.split(':');
     let phase = match parts.next() {
         Some("work") => Phase::Work,
@@ -173,5 +201,9 @@ fn load() -> State {
         _ => return fresh,
     };
     let mut number = || parts.next().and_then(|n| n.parse().ok()).unwrap_or(0);
-    State { phase, ticks: number(), done: number() }
+    State {
+        phase,
+        ticks: number(),
+        done: number(),
+    }
 }

@@ -46,7 +46,9 @@ const DOCKER: &str = "docker_status";
 
 /// A session whose focused pane is somewhere that certainly exists.
 fn session() -> Session {
-    Session::new().running(1, "fish", env!("CARGO_MANIFEST_DIR"), "cargo test").pane(2, "vim", "/")
+    Session::new()
+        .running(1, "fish", env!("CARGO_MANIFEST_DIR"), "cargo test")
+        .pane(2, "vim", "/")
 }
 
 /// One test at a time, because the recorded-output tests put a stub
@@ -79,16 +81,28 @@ fn drawn(runs: &[Run]) -> String {
 #[test]
 fn load_average_refused_says_which_program_it_wanted() {
     let _lock = one_at_a_time();
-    let Some(mut p) = plain_load(LOAD, session()) else { return };
+    let Some(mut p) = plain_load(LOAD, session()) else {
+        return;
+    };
     // The refresh happens on the event, not in `render`, so the refusal
     // only exists once an event has been delivered — which is itself the
     // caching contract: `render` alone never runs anything.
-    assert_eq!(drawn(&p.render().expect("render")), "load …", "nothing has been asked yet");
+    assert_eq!(
+        drawn(&p.render().expect("render")),
+        "load …",
+        "nothing has been asked yet"
+    );
 
     p.on_event(&Event::Started).expect("started");
     let shown = drawn(&p.render().expect("render"));
-    assert!(shown.contains("not granted"), "expected a refusal, got {shown:?}");
-    assert!(shown.contains("uptime"), "the refusal should name the program: {shown:?}");
+    assert!(
+        shown.contains("not granted"),
+        "expected a refusal, got {shown:?}"
+    );
+    assert!(
+        shown.contains("uptime"),
+        "the refusal should name the program: {shown:?}"
+    );
 }
 
 #[test]
@@ -97,14 +111,22 @@ fn load_average_reads_this_machine_s_load() {
     if !installed("uptime") {
         return;
     }
-    let Some(mut p) = with_exec(LOAD, &["uptime", "nproc"], session()) else { return };
+    let Some(mut p) = with_exec(LOAD, &["uptime", "nproc"], session()) else {
+        return;
+    };
     p.on_event(&Event::Started).expect("started");
     let shown = drawn(&p.render().expect("render"));
     // A load average is a number that is different by the time you read
     // it, so the assertion is that it is a number at all.
-    let figure: f64 = shown.parse().unwrap_or_else(|_| panic!("expected a figure, got {shown:?}"));
+    let figure: f64 = shown
+        .parse()
+        .unwrap_or_else(|_| panic!("expected a figure, got {shown:?}"));
     assert!((0.0..10_000.0).contains(&figure), "{shown:?}");
-    assert_eq!(shown.matches('.').count(), 1, "two decimal places, as uptime prints: {shown:?}");
+    assert_eq!(
+        shown.matches('.').count(),
+        1,
+        "two decimal places, as uptime prints: {shown:?}"
+    );
 
     // And a tick refreshes it rather than appending to it.
     p.on_event(&Event::Tick).expect("tick");
@@ -121,11 +143,16 @@ fn load_average_without_nproc_still_shows_the_figure() {
     // The second capability is optional by design: refused `nproc`, the
     // plugin has no threshold to compare against and so never emphasises
     // the figure, but it still reports it.
-    let Some(mut p) = with_exec(LOAD, &["uptime"], session()) else { return };
+    let Some(mut p) = with_exec(LOAD, &["uptime"], session()) else {
+        return;
+    };
     p.on_event(&Event::Started).expect("started");
     let runs = p.render().expect("render");
     assert!(drawn(&runs).parse::<f64>().is_ok(), "{:?}", drawn(&runs));
-    assert!(!runs[0].style.bold, "with no core count there is nothing to be bold about");
+    assert!(
+        !runs[0].style.bold,
+        "with no core count there is nothing to be bold about"
+    );
 }
 
 #[cfg(unix)]
@@ -134,18 +161,43 @@ fn load_average_parses_what_each_platform_s_uptime_prints() {
     let _lock = one_at_a_time();
     // (what `uptime` printed, how many cores, what should be drawn, bold)
     let cases = [
-        (" 18:03:44 up 22:30,  2 users,  load average: 0.52, 3.62, 3.13", "16", "0.52", false),
+        (
+            " 18:03:44 up 22:30,  2 users,  load average: 0.52, 3.62, 3.13",
+            "16",
+            "0.52",
+            false,
+        ),
         // macOS: "averages", no commas between the figures, and a
         // different prefix — which is why the parser looks for the words
         // rather than counting fields.
-        ("18:03  up 3 days,  2 users, load averages: 1.41 3.62 3.13", "16", "1.41", false),
+        (
+            "18:03  up 3 days,  2 users, load averages: 1.41 3.62 3.13",
+            "16",
+            "1.41",
+            false,
+        ),
         // A locale that writes a decimal comma.
-        (" 18:03:44 up 1:02,  1 user,  load average: 1,41, 3,62, 3,13", "16", "1.41", false),
+        (
+            " 18:03:44 up 1:02,  1 user,  load average: 1,41, 3,62, 3,13",
+            "16",
+            "1.41",
+            false,
+        ),
         // Busier than the machine has cores for: the one case that is
         // drawn in a weight the eye catches.
-        (" 18:03:44 up 1:02,  1 user,  load average: 9.87, 8.00, 7.00", "4", "9.87", true),
+        (
+            " 18:03:44 up 1:02,  1 user,  load average: 9.87, 8.00, 7.00",
+            "4",
+            "9.87",
+            true,
+        ),
         // Exactly the core count is not over it.
-        (" 18:03:44 up 1:02,  1 user,  load average: 4.00, 1.00, 1.00", "4", "4.00", false),
+        (
+            " 18:03:44 up 1:02,  1 user,  load average: 4.00, 1.00, 1.00",
+            "4",
+            "4.00",
+            false,
+        ),
         // Something that is not an `uptime` at all, and is said to be so
         // rather than drawn as a zero.
         ("something else entirely", "4", "load ?", false),
@@ -154,7 +206,9 @@ fn load_average_parses_what_each_platform_s_uptime_prints() {
         let dir = stubs(&format!("uptime-{expected}-{cores}"));
         stub(&dir, "uptime", &format!("echo {}", shell_quoted(recorded)));
         stub(&dir, "nproc", &format!("echo {cores}"));
-        let Some(mut p) = with_exec(LOAD, &["uptime", "nproc"], session()) else { return };
+        let Some(mut p) = with_exec(LOAD, &["uptime", "nproc"], session()) else {
+            return;
+        };
         let runs = on_path(&dir, || {
             p.on_event(&Event::Started).expect("started");
             p.render().expect("render")
@@ -169,11 +223,19 @@ fn load_average_parses_what_each_platform_s_uptime_prints() {
 #[test]
 fn disk_free_refused_says_which_program_it_wanted() {
     let _lock = one_at_a_time();
-    let Some(mut p) = plain_load(DISK, session()) else { return };
+    let Some(mut p) = plain_load(DISK, session()) else {
+        return;
+    };
     p.on_event(&Event::Started).expect("started");
     let shown = drawn(&p.render().expect("render"));
-    assert!(shown.contains("not granted"), "expected a refusal, got {shown:?}");
-    assert!(shown.contains("df"), "the refusal should name the program: {shown:?}");
+    assert!(
+        shown.contains("not granted"),
+        "expected a refusal, got {shown:?}"
+    );
+    assert!(
+        shown.contains("df"),
+        "the refusal should name the program: {shown:?}"
+    );
 }
 
 #[test]
@@ -182,14 +244,20 @@ fn disk_free_reports_on_the_focused_pane_s_filesystem() {
     if !installed("df") {
         return;
     }
-    let Some(mut p) = with_exec(DISK, &["df"], session()) else { return };
+    let Some(mut p) = with_exec(DISK, &["df"], session()) else {
+        return;
+    };
     p.on_event(&Event::Started).expect("started");
     let runs = p.render().expect("render");
     let shown = drawn(&runs);
     // `<free> <used>%`, whatever this machine's disk happens to hold.
-    let (free, used) =
-        shown.split_once(' ').unwrap_or_else(|| panic!("expected two parts: {shown:?}"));
-    assert!(free.ends_with(['K', 'M', 'G', 'T', 'P']), "free space should carry a unit: {shown:?}");
+    let (free, used) = shown
+        .split_once(' ')
+        .unwrap_or_else(|| panic!("expected two parts: {shown:?}"));
+    assert!(
+        free.ends_with(['K', 'M', 'G', 'T', 'P']),
+        "free space should carry a unit: {shown:?}"
+    );
     assert!(free[..free.len() - 1].parse::<f64>().is_ok(), "{shown:?}");
     let percent = used.trim().trim_end_matches('%');
     assert!(used.ends_with('%'), "{shown:?}");
@@ -206,7 +274,9 @@ fn disk_free_admits_when_nobody_has_said_where_the_pane_is() {
     // `cwd` is empty until the shell reports it with OSC 7, which is the
     // common case on a shell with no integration installed. Reporting on
     // `/` instead would be wrong in a way nobody would notice.
-    let Some(mut p) = with_exec(DISK, &["df"], Session::new().pane(1, "sh", "")) else { return };
+    let Some(mut p) = with_exec(DISK, &["df"], Session::new().pane(1, "sh", "")) else {
+        return;
+    };
     p.on_event(&Event::Started).expect("started");
     assert_eq!(drawn(&p.render().expect("render")), "df ?");
 }
@@ -259,8 +329,14 @@ fn disk_free_parses_what_each_platform_s_df_prints() {
     ];
     for (recorded, expected, bold) in cases {
         let dir = stubs(&format!("df-{}", expected.replace([' ', '%', '/'], "_")));
-        stub(&dir, "df", &format!("printf '%s\\n' {}", shell_quoted(recorded)));
-        let Some(mut p) = with_exec(DISK, &["df"], session()) else { return };
+        stub(
+            &dir,
+            "df",
+            &format!("printf '%s\\n' {}", shell_quoted(recorded)),
+        );
+        let Some(mut p) = with_exec(DISK, &["df"], session()) else {
+            return;
+        };
         let runs = on_path(&dir, || {
             p.on_event(&Event::Started).expect("started");
             p.render().expect("render")
@@ -275,15 +351,23 @@ fn disk_free_parses_what_each_platform_s_df_prints() {
 #[test]
 fn docker_status_refused_says_which_program_it_wanted() {
     let _lock = one_at_a_time();
-    let Some(mut p) = plain_load(DOCKER, session()) else { return };
+    let Some(mut p) = plain_load(DOCKER, session()) else {
+        return;
+    };
     // Nothing until it has asked: this segment is absent far more often
     // than it is present, so the default is to draw nothing.
     assert!(p.render().expect("render").is_empty());
 
     p.on_event(&Event::Started).expect("started");
     let shown = drawn(&p.render().expect("render"));
-    assert!(shown.contains("not granted"), "expected a refusal, got {shown:?}");
-    assert!(shown.contains("docker"), "the refusal should name the program: {shown:?}");
+    assert!(
+        shown.contains("not granted"),
+        "expected a refusal, got {shown:?}"
+    );
+    assert!(
+        shown.contains("docker"),
+        "the refusal should name the program: {shown:?}"
+    );
 }
 
 #[test]
@@ -292,7 +376,9 @@ fn docker_status_counts_what_this_machine_is_running() {
     if !installed("docker") && !installed("podman") {
         return;
     }
-    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else { return };
+    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else {
+        return;
+    };
     p.on_event(&Event::Started).expect("started");
     let shown = drawn(&p.render().expect("render"));
     // Either engine answered with a count, or neither daemon would talk
@@ -301,8 +387,9 @@ fn docker_status_counts_what_this_machine_is_running() {
     if shown.is_empty() {
         return;
     }
-    let (engine, count) =
-        shown.split_once(' ').unwrap_or_else(|| panic!("expected `engine n`, got {shown:?}"));
+    let (engine, count) = shown
+        .split_once(' ')
+        .unwrap_or_else(|| panic!("expected `engine n`, got {shown:?}"));
     assert!(matches!(engine, "docker" | "podman"), "{shown:?}");
     assert!(count.parse::<usize>().is_ok(), "{shown:?}");
 }
@@ -314,7 +401,9 @@ fn docker_status_tells_apart_absent_idle_and_busy() {
     // Three containers.
     let dir = stubs("docker-three");
     stub(&dir, "docker", "printf 'a\\nb\\nc\\n'");
-    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else { return };
+    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else {
+        return;
+    };
     let runs = on_path(&dir, || {
         p.on_event(&Event::Started).expect("started");
         p.render().expect("render")
@@ -326,7 +415,9 @@ fn docker_status_tells_apart_absent_idle_and_busy() {
     // because it says the daemon is alive — but dim.
     let dir = stubs("docker-idle");
     stub(&dir, "docker", "true");
-    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else { return };
+    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else {
+        return;
+    };
     let runs = on_path(&dir, || {
         p.on_event(&Event::Started).expect("started");
         p.render().expect("render")
@@ -338,8 +429,14 @@ fn docker_status_tells_apart_absent_idle_and_busy() {
     // status bar that reads "cannot connect to the Docker daemon" for
     // the rest of the day.
     let dir = stubs("docker-wedged");
-    stub(&dir, "docker", "echo 'Cannot connect to the Docker daemon' >&2; exit 1");
-    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else { return };
+    stub(
+        &dir,
+        "docker",
+        "echo 'Cannot connect to the Docker daemon' >&2; exit 1",
+    );
+    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else {
+        return;
+    };
     let runs = on_path(&dir, || {
         p.on_event(&Event::Started).expect("started");
         p.render().expect("render")
@@ -350,7 +447,9 @@ fn docker_status_tells_apart_absent_idle_and_busy() {
     // own name is shown, since "docker" would be the wrong word here.
     let dir = stubs("podman-two");
     stub(&dir, "podman", "printf 'one\\ntwo\\n'");
-    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else { return };
+    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else {
+        return;
+    };
     let runs = on_path(&dir, || {
         p.on_event(&Event::Started).expect("started");
         p.render().expect("render")
@@ -360,7 +459,9 @@ fn docker_status_tells_apart_absent_idle_and_busy() {
     // Neither engine installed: the segment is indistinguishable from
     // not having the plugin, which is the point.
     let dir = stubs("no-engine");
-    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else { return };
+    let Some(mut p) = with_exec(DOCKER, &["docker", "podman"], session()) else {
+        return;
+    };
     let runs = on_path(&dir, || {
         p.on_event(&Event::Started).expect("started");
         p.render().expect("render")

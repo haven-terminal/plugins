@@ -24,7 +24,9 @@ use haven_plugin_host::{text_of, Command as PluginCommand, CommandEnd, Event};
 
 /// A session with one focused pane showing some output.
 fn screen(text: &str) -> Session {
-    Session::new().pane(1, "fish", "/Projects/HavenTerminal").showing(1, text)
+    Session::new()
+        .pane(1, "fish", "/Projects/HavenTerminal")
+        .showing(1, text)
 }
 
 /// A command finishing in pane 1, which is when all three plugins look.
@@ -51,11 +53,19 @@ fn notices(commands: &[PluginCommand]) -> Vec<String> {
 
 #[test]
 fn url_hints_without_the_grant_says_which_permission_it_wanted() {
-    let Some(mut p) = plain_load("url_hints", screen("see https://example.com/a")) else { return };
+    let Some(mut p) = plain_load("url_hints", screen("see https://example.com/a")) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     let drawn = text_of(&p.render().expect("render"));
-    assert!(drawn.contains("read-pane-content"), "expected the refusal, got {drawn:?}");
-    assert!(!drawn.contains("link"), "it cannot know whether there were links: {drawn:?}");
+    assert!(
+        drawn.contains("read-pane-content"),
+        "expected the refusal, got {drawn:?}"
+    );
+    assert!(
+        !drawn.contains("link"),
+        "it cannot know whether there were links: {drawn:?}"
+    );
 }
 
 #[test]
@@ -71,7 +81,9 @@ See https://doc.rust-lang.org/error_codes/E0432.html for more
 Opened (https://docs.rs/haven/latest/haven/index.html) in the browser.
 Mirror at www.example.org/haven, or http://localhost:8080/docs.
 ";
-    let Some(mut p) = with_pane_text("url_hints", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("url_hints", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     let drawn = text_of(&p.render().expect("render"));
     // Four distinct links, not five: the documentation URL appears
@@ -87,8 +99,10 @@ fn url_hints_knows_where_a_url_stops() {
     // off, the segment would read `example.com.` — which is the whole
     // reason the scanner is written by hand rather than as a match on
     // "non-space characters".
-    let Some(mut p) = with_pane_text("url_hints", screen("Read the notes at https://example.com."))
-    else {
+    let Some(mut p) = with_pane_text(
+        "url_hints",
+        screen("Read the notes at https://example.com."),
+    ) else {
         return;
     };
     p.on_event(&ended()).expect("event");
@@ -99,7 +113,9 @@ fn url_hints_knows_where_a_url_stops() {
 #[test]
 fn url_hints_keeps_the_brackets_that_are_part_of_the_url() {
     let output = "see (https://en.wikipedia.org/wiki/Terminal_(typewriter)) for the history";
-    let Some(mut p) = with_pane_text("url_hints", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("url_hints", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     let drawn = text_of(&p.render().expect("render"));
     // One link, and it still has a path: the outer bracket came off and
@@ -117,9 +133,15 @@ $ ls
 Cargo.toml  src  target
 checking www.foo and http:// and haven 0.1.0
 ";
-    let Some(mut p) = with_pane_text("url_hints", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("url_hints", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
-    assert_eq!(text_of(&p.render().expect("render")), "", "something was taken for a link");
+    assert_eq!(
+        text_of(&p.render().expect("render")),
+        "",
+        "something was taken for a link"
+    );
 }
 
 // ------------------------------------------------------------- build-errors
@@ -131,7 +153,10 @@ fn build_errors_without_the_grant_says_which_permission_it_wanted() {
     };
     p.on_event(&ended()).expect("event");
     let drawn = text_of(&p.render().expect("render"));
-    assert!(drawn.contains("read-pane-content"), "expected the refusal, got {drawn:?}");
+    assert!(
+        drawn.contains("read-pane-content"),
+        "expected the refusal, got {drawn:?}"
+    );
 }
 
 #[test]
@@ -153,7 +178,9 @@ error: cannot find value `pane` in this scope
 warning: `haven` (lib) generated 1 warning
 error: could not compile `haven` (lib) due to 2 previous errors; 1 warning emitted
 ";
-    let Some(mut p) = with_pane_text("build_errors", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("build_errors", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     let drawn = text_of(&p.render().expect("render"));
     // Two errors and one warning. The `generated 1 warning` line and the
@@ -172,7 +199,9 @@ error[E0425]: cannot find value `x` in this scope
 error: aborting due to 1 previous error
 error: could not compile `demo` (bin \"demo\") due to 1 previous error
 ";
-    let Some(mut p) = with_pane_text("build_errors", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("build_errors", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     assert_eq!(text_of(&p.render().expect("render")), "1 error");
 }
@@ -188,7 +217,9 @@ util.c:3:10: fatal error: missing.h: No such file or directory
 compilation terminated.
 make: *** [Makefile:7: main.o] Error 1
 ";
-    let Some(mut p) = with_pane_text("build_errors", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("build_errors", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     assert_eq!(text_of(&p.render().expect("render")), "2 errors, 1 warning");
 }
@@ -201,7 +232,9 @@ test urls::a_url_wrapped_across_two_rows ... FAILED
 FAILED: build/haven.o
 test result: FAILED. 3 passed; 1 failed; 0 ignored
 ";
-    let Some(mut p) = with_pane_text("build_errors", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("build_errors", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     // Two failures. `test result: FAILED.` is the verdict on those two.
     assert_eq!(text_of(&p.render().expect("render")), "2 errors");
@@ -215,10 +248,15 @@ fn build_errors_says_nothing_about_a_clean_build() {
      Running unittests src/lib.rs (target/debug/deps/haven-9f86d0818)
 test result: ok. 128 passed; 0 failed; 0 ignored; 0 measured
 ";
-    let Some(mut p) = with_pane_text("build_errors", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("build_errors", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     let runs = p.render().expect("render");
-    assert!(runs.is_empty(), "a clean build should draw nothing at all: {runs:?}");
+    assert!(
+        runs.is_empty(),
+        "a clean build should draw nothing at all: {runs:?}"
+    );
 }
 
 #[test]
@@ -226,7 +264,9 @@ fn build_errors_forgets_the_count_when_the_next_command_starts() {
     // A number from the last build sitting beside a build that is still
     // running is worse than no number.
     let output = "error: cannot find value `x` in this scope\n";
-    let Some(mut p) = with_pane_text("build_errors", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("build_errors", screen(output)) else {
+        return;
+    };
     p.on_event(&ended()).expect("event");
     assert_eq!(text_of(&p.render().expect("render")), "1 error");
     p.on_event(&Event::CommandBegan(haven_plugin_host::CommandStart {
@@ -234,7 +274,10 @@ fn build_errors_forgets_the_count_when_the_next_command_starts() {
         command: "cargo build".into(),
     }))
     .expect("began");
-    assert!(p.render().expect("render").is_empty(), "the old count should be gone");
+    assert!(
+        p.render().expect("render").is_empty(),
+        "the old count should be gone"
+    );
 }
 
 // ------------------------------------------------------------- secret-guard
@@ -243,11 +286,19 @@ fn build_errors_forgets_the_count_when_the_next_command_starts() {
 fn secret_guard_without_the_grant_says_so_rather_than_guarding_nothing() {
     // The worst failure mode for this plugin specifically: silence that
     // looks exactly like "nothing was found".
-    let Some(mut p) = plain_load("secret_guard", screen("AKIAIOSFODNN7EXAMPLE")) else { return };
+    let Some(mut p) = plain_load("secret_guard", screen("AKIAIOSFODNN7EXAMPLE")) else {
+        return;
+    };
     let commands = p.on_event(&ended()).expect("event");
-    assert!(notices(&commands).is_empty(), "it cannot have found anything: {commands:?}");
+    assert!(
+        notices(&commands).is_empty(),
+        "it cannot have found anything: {commands:?}"
+    );
     let drawn = text_of(&p.render().expect("render"));
-    assert!(drawn.contains("read-pane-content"), "expected the refusal, got {drawn:?}");
+    assert!(
+        drawn.contains("read-pane-content"),
+        "expected the refusal, got {drawn:?}"
+    );
 }
 
 #[test]
@@ -260,10 +311,16 @@ fn secret_guard_names_the_kind_and_never_the_secret() {
     let output = format!(
         "$ gh auth token\n{token}\n$ aws configure get aws_access_key_id\nAKIAIOSFODNN7EXAMPLE\n"
     );
-    let Some(mut p) = with_pane_text("secret_guard", screen(&output)) else { return };
+    let Some(mut p) = with_pane_text("secret_guard", screen(&output)) else {
+        return;
+    };
     let commands = p.on_event(&ended()).expect("event");
     let said = notices(&commands);
-    assert_eq!(said.len(), 1, "one notice, whatever was found: {commands:?}");
+    assert_eq!(
+        said.len(),
+        1,
+        "one notice, whatever was found: {commands:?}"
+    );
     let notice = &said[0];
 
     assert!(notice.contains("AWS access key"), "{notice:?}");
@@ -271,13 +328,28 @@ fn secret_guard_names_the_kind_and_never_the_secret() {
     assert!(notice.contains("pane 1"), "it should say where: {notice:?}");
 
     // Not the secret, nor any piece of it long enough to be useful.
-    assert!(!notice.contains(token), "the notice printed the token: {notice:?}");
-    assert!(!notice.contains("16C7e42F292c6912"), "part of the token leaked: {notice:?}");
-    assert!(!notice.contains("AKIA"), "the notice printed the key: {notice:?}");
-    assert!(!notice.contains("IOSFODNN7EXAMPLE"), "part of the key leaked: {notice:?}");
+    assert!(
+        !notice.contains(token),
+        "the notice printed the token: {notice:?}"
+    );
+    assert!(
+        !notice.contains("16C7e42F292c6912"),
+        "part of the token leaked: {notice:?}"
+    );
+    assert!(
+        !notice.contains("AKIA"),
+        "the notice printed the key: {notice:?}"
+    );
+    assert!(
+        !notice.contains("IOSFODNN7EXAMPLE"),
+        "part of the key leaked: {notice:?}"
+    );
 
     // And it does not put anything on the status bar either.
-    assert!(p.render().expect("render").is_empty(), "nothing read should be drawn");
+    assert!(
+        p.render().expect("render").is_empty(),
+        "nothing read should be drawn"
+    );
 }
 
 #[test]
@@ -290,13 +362,21 @@ $ cat deploy.log
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2
 -----END OPENSSH PRIVATE KEY-----
 ";
-    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else {
+        return;
+    };
     let said = notices(&p.on_event(&ended()).expect("event"));
     assert_eq!(said.len(), 1, "{said:?}");
     assert!(said[0].contains("private key"), "{said:?}");
     assert!(said[0].contains("bearer token"), "{said:?}");
-    assert!(!said[0].contains("eyJzdWIiOiIx"), "the header's value leaked: {said:?}");
-    assert!(!said[0].contains("b3BlbnNzaC1rZXk"), "the key's body leaked: {said:?}");
+    assert!(
+        !said[0].contains("eyJzdWIiOiIx"),
+        "the header's value leaked: {said:?}"
+    );
+    assert!(
+        !said[0].contains("b3BlbnNzaC1rZXk"),
+        "the key's body leaked: {said:?}"
+    );
 }
 
 #[test]
@@ -317,13 +397,18 @@ model: sk-test
 Bearer token authentication is supported.
 HEAD is now at 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
 ";
-    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else {
+        return;
+    };
     let commands = p.on_event(&ended()).expect("event");
     assert!(
         notices(&commands).is_empty(),
         "a false positive a day gets the plugin uninstalled: {commands:?}"
     );
-    assert!(p.render().expect("render").is_empty(), "and nothing on the bar either");
+    assert!(
+        p.render().expect("render").is_empty(),
+        "and nothing on the bar either"
+    );
 }
 
 #[test]
@@ -332,7 +417,9 @@ fn secret_guard_does_not_say_the_same_thing_twice() {
     // scrollback is what scrollback is. Warning again every time
     // anything finishes would train people to ignore it.
     let output = "$ env | grep AWS\nAWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\n";
-    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else {
+        return;
+    };
     assert_eq!(notices(&p.on_event(&ended()).expect("event")).len(), 1);
     assert!(
         notices(&p.on_event(&ended()).expect("event")).is_empty(),
@@ -343,7 +430,9 @@ fn secret_guard_does_not_say_the_same_thing_twice() {
 #[test]
 fn secret_guard_notices_an_exported_secret_but_not_a_path_to_one() {
     let output = "$ cat .env\nexport OPENAI_API_KEY=hunter2hunter2hunter2\n";
-    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else { return };
+    let Some(mut p) = with_pane_text("secret_guard", screen(output)) else {
+        return;
+    };
     let said = notices(&p.on_event(&ended()).expect("event"));
     assert_eq!(said.len(), 1, "{said:?}");
     assert!(said[0].contains("export"), "{said:?}");

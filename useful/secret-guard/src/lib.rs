@@ -141,7 +141,9 @@ thread_local! {
 
 impl Plugin for SecretGuard {
     fn on_event(event: Event) -> Vec<Command> {
-        let Event::CommandEnded(end) = event else { return Vec::new() };
+        let Event::CommandEnded(end) = event else {
+            return Vec::new();
+        };
         let text = match host::pane_text(end.pane, ROWS) {
             Ok(text) => text,
             Err(why) => {
@@ -156,8 +158,11 @@ impl Plugin for SecretGuard {
             LAST.with(|cell| cell.borrow_mut().clear());
             return Vec::new();
         }
-        let notice =
-            format!("{} in pane {} — it is in the scrollback now", listed(&kinds), end.pane);
+        let notice = format!(
+            "{} in pane {} — it is in the scrollback now",
+            listed(&kinds),
+            end.pane
+        );
         // The same find, again, on a screen that has not changed is not
         // news. Comparing the notice rather than the secret is the point:
         // there is nothing sensitive in this comparison.
@@ -194,31 +199,41 @@ fn kinds_in(text: &str) -> Vec<&'static str> {
 
 fn kinds_on(line: &str) -> Vec<&'static str> {
     let mut found = Vec::new();
-    if tokens_after(line, "AKIA", |c| c.is_ascii_uppercase() || c.is_ascii_digit())
-        .iter()
-        .any(|token| token.chars().count() >= 16)
+    if tokens_after(line, "AKIA", |c| {
+        c.is_ascii_uppercase() || c.is_ascii_digit()
+    })
+    .iter()
+    .any(|token| token.chars().count() >= 16)
     {
         found.push("an AWS access key id");
     }
-    let github =
-        |prefix| tokens_after(line, prefix, word).iter().any(|token| token.chars().count() >= 20);
+    let github = |prefix| {
+        tokens_after(line, prefix, word)
+            .iter()
+            .any(|token| token.chars().count() >= 20)
+    };
     if github("ghp_") || github("github_pat_") {
         found.push("a GitHub token");
     }
-    if tokens_after(line, "sk-", |c| word(c) || c == '-').iter().any(|token| {
-        // Length and a digit together: long hyphenated words are
-        // filenames and branch names, and this is the one prefix short
-        // enough to meet them by accident.
-        token.chars().count() >= 32 && token.chars().any(|c| c.is_ascii_digit())
-    }) {
+    if tokens_after(line, "sk-", |c| word(c) || c == '-')
+        .iter()
+        .any(|token| {
+            // Length and a digit together: long hyphenated words are
+            // filenames and branch names, and this is the one prefix short
+            // enough to meet them by accident.
+            token.chars().count() >= 32 && token.chars().any(|c| c.is_ascii_digit())
+        })
+    {
         found.push("an API key");
     }
     if line.contains("-----BEGIN") && line.contains("PRIVATE KEY") {
         found.push("a private key");
     }
-    if tokens_after(line, "Bearer ", |c| word(c) || matches!(c, '-' | '.' | '+' | '/' | '='))
-        .iter()
-        .any(|token| token.chars().count() >= 16)
+    if tokens_after(line, "Bearer ", |c| {
+        word(c) || matches!(c, '-' | '.' | '+' | '/' | '=')
+    })
+    .iter()
+    .any(|token| token.chars().count() >= 16)
     {
         found.push("a bearer token");
     }
@@ -248,8 +263,11 @@ fn tokens_after<'a>(line: &'a str, prefix: &str, allowed: fn(char) -> bool) -> V
             Some(c) => !(word(c) || c == '-'),
         };
         let rest = &line[at + prefix.len()..];
-        let end =
-            rest.char_indices().find(|(_, c)| !allowed(*c)).map(|(i, _)| i).unwrap_or(rest.len());
+        let end = rest
+            .char_indices()
+            .find(|(_, c)| !allowed(*c))
+            .map(|(i, _)| i)
+            .unwrap_or(rest.len());
         if starts_a_word {
             found.push(&rest[..end]);
         }
@@ -260,17 +278,30 @@ fn tokens_after<'a>(line: &'a str, prefix: &str, allowed: fn(char) -> bool) -> V
 
 /// `export SOMETHING_TOKEN=value`, with a value that looks like one.
 fn exported_secret(line: &str) -> bool {
-    let Some(rest) = line.trim_start().strip_prefix("export ") else { return false };
-    let Some((name, value)) = rest.split_once('=') else { return false };
+    let Some(rest) = line.trim_start().strip_prefix("export ") else {
+        return false;
+    };
+    let Some((name, value)) = rest.split_once('=') else {
+        return false;
+    };
     let name = name.trim();
     if name.is_empty()
-        || !name.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+        || !name
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
     {
         return false;
     }
-    let named_like_a_secret = ["_TOKEN", "_SECRET", "_KEY", "_PASSWORD", "_PASSWD", "_CREDENTIALS"]
-        .iter()
-        .any(|suffix| name.ends_with(suffix));
+    let named_like_a_secret = [
+        "_TOKEN",
+        "_SECRET",
+        "_KEY",
+        "_PASSWORD",
+        "_PASSWD",
+        "_CREDENTIALS",
+    ]
+    .iter()
+    .any(|suffix| name.ends_with(suffix));
     if !named_like_a_secret {
         return false;
     }

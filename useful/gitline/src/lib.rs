@@ -123,7 +123,10 @@ impl Plugin for Gitline {
 fn refresh() {
     let state = match look() {
         Ok(state) => state,
-        Err(refused) => State { refused: Some(refused), ..State::default() },
+        Err(refused) => State {
+            refused: Some(refused),
+            ..State::default()
+        },
     };
     STATE.set(state);
 }
@@ -146,7 +149,15 @@ fn look() -> Result<State, String> {
     // it still gives the branch in a repository with no commits yet,
     // where `rev-parse HEAD` fails outright. A fresh `git init` is a
     // real state and should read `main`, not an error.
-    let head = match git(&["git", "-C", cwd, "symbolic-ref", "--quiet", "--short", "HEAD"])? {
+    let head = match git(&[
+        "git",
+        "-C",
+        cwd,
+        "symbolic-ref",
+        "--quiet",
+        "--short",
+        "HEAD",
+    ])? {
         Some(branch) if !branch.is_empty() => branch,
         // No symbolic `HEAD`: detached, so show what a person can act
         // on, which is the short sha.
@@ -165,9 +176,15 @@ fn look() -> Result<State, String> {
     // upstream and when there are no commits; both come back as `None`
     // and mean "no arrows", not "something is wrong".
     let (mut ahead, mut behind) = (0, 0);
-    if let Some(counts) =
-        git(&["git", "-C", cwd, "rev-list", "--count", "--left-right", "@{upstream}...HEAD"])?
-    {
+    if let Some(counts) = git(&[
+        "git",
+        "-C",
+        cwd,
+        "rev-list",
+        "--count",
+        "--left-right",
+        "@{upstream}...HEAD",
+    ])? {
         // `left<TAB>right`: left is the upstream's own commits, so
         // behind; right is ours, so ahead.
         let mut fields = counts.split_whitespace();
@@ -175,7 +192,13 @@ fn look() -> Result<State, String> {
         ahead = fields.next().and_then(|n| n.parse().ok()).unwrap_or(0);
     }
 
-    Ok(State { head, dirty, ahead, behind, refused: None })
+    Ok(State {
+        head,
+        dirty,
+        ahead,
+        behind,
+        refused: None,
+    })
 }
 
 /// Run `git`, keeping the host's refusal distinct from git's own answer.

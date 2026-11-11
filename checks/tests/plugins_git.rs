@@ -61,7 +61,10 @@ impl Repo {
     }
 
     fn cwd(&self) -> String {
-        self.path.to_str().expect("a utf-8 temporary path").to_string()
+        self.path
+            .to_str()
+            .expect("a utf-8 temporary path")
+            .to_string()
     }
 
     /// Run git in the repository, with an identity supplied on the
@@ -70,7 +73,12 @@ impl Repo {
     fn git(&self, args: &[&str]) -> String {
         let out = Command::new("git")
             .current_dir(&self.path)
-            .args(["-c", "user.email=test@haven.invalid", "-c", "user.name=Haven Test"])
+            .args([
+                "-c",
+                "user.email=test@haven.invalid",
+                "-c",
+                "user.name=Haven Test",
+            ])
             .args(["-c", "commit.gpgsign=false"])
             .args(args)
             .output()
@@ -119,7 +127,10 @@ fn session_in(cwd: &str) -> Session {
 /// a repository, so it is the one the tests use.
 fn refreshed(plugin: &mut Loaded, cwd: &str) -> Vec<Run> {
     plugin
-        .on_event(&Event::CwdChanged(CwdChange { pane: 1, cwd: cwd.to_string() }))
+        .on_event(&Event::CwdChanged(CwdChange {
+            pane: 1,
+            cwd: cwd.to_string(),
+        }))
         .expect("the refresh event");
     plugin.render().expect("render")
 }
@@ -131,7 +142,8 @@ fn drawn(plugin: &mut Loaded, cwd: &str) -> String {
 /// Whether the run holding `needle` is bold, which is how these plugins
 /// say "look at this".
 fn bold_around(runs: &[Run], needle: &str) -> bool {
-    runs.iter().any(|run| run.text.contains(needle) && run.style.bold)
+    runs.iter()
+        .any(|run| run.text.contains(needle) && run.style.bold)
 }
 
 #[test]
@@ -139,10 +151,18 @@ fn a_git_plugin_without_the_grant_says_which_program_it_wanted() {
     // All three, because all three have to fail the same way: the
     // refusal goes on the bar rather than into an empty segment. No
     // repository is needed — the host refuses before anything runs.
-    let Some(mut p) = plain_load("gitline", session_in("/tmp")) else { return };
+    let Some(mut p) = plain_load("gitline", session_in("/tmp")) else {
+        return;
+    };
     let shown = drawn(&mut p, "/tmp");
-    assert!(shown.contains("not granted"), "gitline should report the refusal: {shown:?}");
-    assert!(shown.contains("git"), "gitline should name the program: {shown:?}");
+    assert!(
+        shown.contains("not granted"),
+        "gitline should report the refusal: {shown:?}"
+    );
+    assert!(
+        shown.contains("git"),
+        "gitline should name the program: {shown:?}"
+    );
     // And the refusal survives a second draw: `render` shows what the
     // last refresh found, and that is what it found.
     assert!(text_of(&p.render().expect("render")).contains("not granted"));
@@ -150,8 +170,14 @@ fn a_git_plugin_without_the_grant_says_which_program_it_wanted() {
     for name in ["git_wip", "git_stash"] {
         let mut p = plain_load(name, session_in("/tmp")).expect("built");
         let shown = drawn(&mut p, "/tmp");
-        assert!(shown.contains("not granted"), "{name} should report the refusal: {shown:?}");
-        assert!(shown.contains("git"), "{name} should name the program: {shown:?}");
+        assert!(
+            shown.contains("not granted"),
+            "{name} should report the refusal: {shown:?}"
+        );
+        assert!(
+            shown.contains("git"),
+            "{name} should name the program: {shown:?}"
+        );
     }
 }
 
@@ -159,24 +185,39 @@ fn a_git_plugin_without_the_grant_says_which_program_it_wanted() {
 fn gitline_shows_the_branch_and_whether_the_tree_is_dirty() {
     // With no panes there is no directory to ask about, and a plugin
     // that cannot know says nothing.
-    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else { return };
-    assert_eq!(text_of(&p.render().expect("render")), "", "no pane, no answer");
+    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else {
+        return;
+    };
+    assert_eq!(
+        text_of(&p.render().expect("render")),
+        "",
+        "no pane, no answer"
+    );
 
-    let Some(repo) = Repo::new("gitline-branch") else { return };
+    let Some(repo) = Repo::new("gitline-branch") else {
+        return;
+    };
     let cwd = repo.cwd();
     let mut p = with_exec("gitline", &["git"], session_in(&cwd)).expect("built");
 
     // A repository with no commits at all. `git rev-parse HEAD` fails
     // here, which is why the plugin asks `symbolic-ref` instead: a
     // fresh `git init` reads `main` rather than an error.
-    assert_eq!(drawn(&mut p, &cwd), "main", "an empty new repository is still on a branch");
+    assert_eq!(
+        drawn(&mut p, &cwd),
+        "main",
+        "an empty new repository is still on a branch"
+    );
 
     // Untracked work makes it dirty, and the mark is bold because that
     // is the part people look for.
     repo.write("a.txt", "one\n");
     let runs = refreshed(&mut p, &cwd);
     assert_eq!(text_of(&runs), "main*", "{:?}", text_of(&runs));
-    assert!(bold_around(&runs, "*"), "the dirty mark should catch the eye: {runs:?}");
+    assert!(
+        bold_around(&runs, "*"),
+        "the dirty mark should catch the eye: {runs:?}"
+    );
 
     // Committed, and it is clean again.
     repo.commit("one");
@@ -190,15 +231,23 @@ fn gitline_shows_the_branch_and_whether_the_tree_is_dirty() {
     // can act on.
     let sha = repo.git(&["rev-parse", "--short", "HEAD"]);
     repo.git(&["checkout", "--quiet", "--detach"]);
-    assert_eq!(drawn(&mut p, &cwd), sha, "a detached HEAD should show its sha");
+    assert_eq!(
+        drawn(&mut p, &cwd),
+        sha,
+        "a detached HEAD should show its sha"
+    );
 }
 
 #[test]
 fn gitline_counts_the_drift_from_an_upstream_and_is_quiet_without_one() {
-    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else { return };
+    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else {
+        return;
+    };
     assert_eq!(text_of(&p.render().expect("render")), "");
 
-    let Some(upstream) = Repo::new("gitline-upstream") else { return };
+    let Some(upstream) = Repo::new("gitline-upstream") else {
+        return;
+    };
     upstream.write("f", "1\n");
     upstream.commit("a");
     upstream.write("f", "1\n2\n");
@@ -213,21 +262,37 @@ fn gitline_counts_the_drift_from_an_upstream_and_is_quiet_without_one() {
         .arg(&clone)
         .output()
         .expect("clone");
-    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let cwd = clone.to_str().expect("a utf-8 temporary path").to_string();
     let git = |args: &[&str]| {
         let out = Command::new("git")
             .current_dir(&clone)
-            .args(["-c", "user.email=test@haven.invalid", "-c", "user.name=Haven Test"])
+            .args([
+                "-c",
+                "user.email=test@haven.invalid",
+                "-c",
+                "user.name=Haven Test",
+            ])
             .args(args)
             .output()
             .expect("run git");
-        assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
     };
 
     let mut p = with_exec("gitline", &["git"], session_in(&cwd)).expect("built");
     let shown = drawn(&mut p, &cwd);
-    assert!(!shown.contains('↑') && !shown.contains('↓'), "level means no arrows: {shown:?}");
+    assert!(
+        !shown.contains('↑') && !shown.contains('↓'),
+        "level means no arrows: {shown:?}"
+    );
 
     // One commit behind and one ahead: the branch has diverged.
     git(&["reset", "--quiet", "--hard", "HEAD~1"]);
@@ -250,16 +315,25 @@ fn gitline_counts_the_drift_from_an_upstream_and_is_quiet_without_one() {
 fn gitline_says_nothing_outside_a_repository() {
     // Silence, not a message: most directories are not repositories and
     // a status bar should not keep saying so.
-    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else { return };
+    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else {
+        return;
+    };
     assert_eq!(text_of(&p.render().expect("render")), "");
 
     let elsewhere = std::env::temp_dir().join(format!("haven-git-none-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&elsewhere);
     std::fs::create_dir_all(&elsewhere).expect("make a temporary directory");
-    let cwd = elsewhere.to_str().expect("a utf-8 temporary path").to_string();
+    let cwd = elsewhere
+        .to_str()
+        .expect("a utf-8 temporary path")
+        .to_string();
 
     let mut p = with_exec("gitline", &["git"], session_in(&cwd)).expect("built");
-    assert_eq!(drawn(&mut p, &cwd), "", "not a repository, so nothing at all");
+    assert_eq!(
+        drawn(&mut p, &cwd),
+        "",
+        "not a repository, so nothing at all"
+    );
 
     // And with no cwd reported — a shell without Haven's shell
     // integration — there is nothing to be right about.
@@ -271,8 +345,14 @@ fn gitline_says_nothing_outside_a_repository() {
 
 #[test]
 fn git_wip_counts_staged_and_unstaged_work_together() {
-    let Some(mut p) = with_exec("git_wip", &["git"], Session::new()) else { return };
-    assert_eq!(text_of(&p.render().expect("render")), "", "no pane, no answer");
+    let Some(mut p) = with_exec("git_wip", &["git"], Session::new()) else {
+        return;
+    };
+    assert_eq!(
+        text_of(&p.render().expect("render")),
+        "",
+        "no pane, no answer"
+    );
 
     let Some(repo) = Repo::new("wip") else { return };
     repo.lines("a.txt", 10);
@@ -305,10 +385,14 @@ fn git_wip_counts_staged_and_unstaged_work_together() {
 
 #[test]
 fn git_wip_shouts_past_the_threshold_and_sees_a_repository_with_no_commits() {
-    let Some(mut p) = with_exec("git_wip", &["git"], Session::new()) else { return };
+    let Some(mut p) = with_exec("git_wip", &["git"], Session::new()) else {
+        return;
+    };
     assert_eq!(text_of(&p.render().expect("render")), "");
 
-    let Some(repo) = Repo::new("wip-loud") else { return };
+    let Some(repo) = Repo::new("wip-loud") else {
+        return;
+    };
     // No commits at all, so there is no `HEAD` to diff against. A day's
     // work staged in a fresh `git init` is exactly the case the plugin
     // exists for, so it must not be silent here.
@@ -319,7 +403,10 @@ fn git_wip_shouts_past_the_threshold_and_sees_a_repository_with_no_commits() {
     let mut p = with_exec("git_wip", &["git"], session_in(&cwd)).expect("built");
     let runs = refreshed(&mut p, &cwd);
     assert_eq!(text_of(&runs), "+300-0", "{:?}", text_of(&runs));
-    assert!(bold_around(&runs, "+300"), "300 lines is past the threshold: {runs:?}");
+    assert!(
+        bold_around(&runs, "+300"),
+        "300 lines is past the threshold: {runs:?}"
+    );
 
     // Under the threshold it is plain, so the bold means something.
     // Twelve more lines on a file that is already tracked: an untracked
@@ -329,15 +416,26 @@ fn git_wip_shouts_past_the_threshold_and_sees_a_repository_with_no_commits() {
     repo.lines("big.txt", 312);
     let runs = refreshed(&mut p, &cwd);
     assert_eq!(text_of(&runs), "+12-0", "{:?}", text_of(&runs));
-    assert!(!bold_around(&runs, "+12"), "a small diff should not shout: {runs:?}");
+    assert!(
+        !bold_around(&runs, "+12"),
+        "a small diff should not shout: {runs:?}"
+    );
 }
 
 #[test]
 fn git_stash_is_silent_until_something_is_hidden() {
-    let Some(mut p) = with_exec("git_stash", &["git"], Session::new()) else { return };
-    assert_eq!(text_of(&p.render().expect("render")), "", "no pane, no answer");
+    let Some(mut p) = with_exec("git_stash", &["git"], Session::new()) else {
+        return;
+    };
+    assert_eq!(
+        text_of(&p.render().expect("render")),
+        "",
+        "no pane, no answer"
+    );
 
-    let Some(repo) = Repo::new("stash") else { return };
+    let Some(repo) = Repo::new("stash") else {
+        return;
+    };
     repo.lines("a.txt", 3);
     repo.commit("three");
 
@@ -368,17 +466,25 @@ fn a_git_plugin_describes_the_pane_and_not_the_daemon() {
     // pane here points at a repository on a branch that exists nowhere
     // else, holding a stash and some staged work that Haven's own
     // checkout does not have.
-    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else { return };
+    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else {
+        return;
+    };
     assert_eq!(text_of(&p.render().expect("render")), "");
 
-    let Some(repo) = Repo::new("not-the-daemon") else { return };
+    let Some(repo) = Repo::new("not-the-daemon") else {
+        return;
+    };
     repo.lines("a.txt", 2);
     repo.commit("one");
     repo.git(&["checkout", "--quiet", "-b", "only-in-the-pane"]);
 
     let cwd = repo.cwd();
     let mut p = with_exec("gitline", &["git"], session_in(&cwd)).expect("built");
-    assert_eq!(drawn(&mut p, &cwd), "only-in-the-pane", "the pane's repository, not the daemon's");
+    assert_eq!(
+        drawn(&mut p, &cwd),
+        "only-in-the-pane",
+        "the pane's repository, not the daemon's"
+    );
 
     repo.lines("a.txt", 9);
     repo.git(&["stash", "--quiet"]);
@@ -400,10 +506,14 @@ fn render_does_not_run_git_and_so_draws_what_the_last_event_found() {
     // any event has arrived shows nothing, and drawing after an event
     // keeps showing what that event found even though the repository
     // has changed underneath.
-    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else { return };
+    let Some(mut p) = with_exec("gitline", &["git"], Session::new()) else {
+        return;
+    };
     assert_eq!(text_of(&p.render().expect("render")), "");
 
-    let Some(repo) = Repo::new("cached") else { return };
+    let Some(repo) = Repo::new("cached") else {
+        return;
+    };
     repo.lines("a.txt", 2);
     repo.commit("one");
 

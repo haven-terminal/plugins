@@ -152,8 +152,12 @@ fn scan() {
     let text = match host::pane_text(pane.id, ROWS) {
         Ok(text) => text,
         Err(why) => {
-            FOUND
-                .with(|cell| *cell.borrow_mut() = Found { refused: Some(why), ..Found::default() });
+            FOUND.with(|cell| {
+                *cell.borrow_mut() = Found {
+                    refused: Some(why),
+                    ..Found::default()
+                }
+            });
             return;
         }
     };
@@ -217,8 +221,11 @@ fn starts_with_ci(text: &str, prefix: &str) -> bool {
 
 /// How far a URL runs before it hits something a URL cannot contain.
 fn span(rest: &str) -> &str {
-    let end =
-        rest.char_indices().find(|(_, c)| !is_url_char(*c)).map(|(i, _)| i).unwrap_or(rest.len());
+    let end = rest
+        .char_indices()
+        .find(|(_, c)| !is_url_char(*c))
+        .map(|(i, _)| i)
+        .unwrap_or(rest.len());
     &rest[..end]
 }
 
@@ -228,13 +235,18 @@ fn span(rest: &str) -> &str {
 /// is rare and the bytes are too ambiguous to guess at.
 fn is_url_char(c: char) -> bool {
     c.is_ascii_graphic()
-        && !matches!(c, '<' | '>' | '"' | '\'' | '`' | '|' | '\\' | '^' | '{' | '}')
+        && !matches!(
+            c,
+            '<' | '>' | '"' | '\'' | '`' | '|' | '\\' | '^' | '{' | '}'
+        )
 }
 
 /// Take the sentence's punctuation back off the end of the URL.
 fn trimmed(mut url: &str) -> &str {
     loop {
-        let Some(last) = url.chars().last() else { return url };
+        let Some(last) = url.chars().last() else {
+            return url;
+        };
         let drop = match last {
             '.' | ',' | ';' | ':' | '!' | '?' | '*' | '_' | '~' => true,
             // A bracket that was never opened inside the URL was closing
@@ -279,7 +291,9 @@ fn plausible(url: &str, bare: bool) -> bool {
     // A dotted quad, for the ports people serve things on locally.
     let labels: Vec<&str> = name.split('.').collect();
     if labels.len() == 4
-        && labels.iter().all(|l| !l.is_empty() && l.chars().all(|c| c.is_ascii_digit()))
+        && labels
+            .iter()
+            .all(|l| !l.is_empty() && l.chars().all(|c| c.is_ascii_digit()))
     {
         return true;
     }

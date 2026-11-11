@@ -116,7 +116,10 @@ impl Plugin for GitWip {
 fn refresh() {
     let state = match look() {
         Ok(state) => state,
-        Err(refused) => State { refused: Some(refused), ..State::default() },
+        Err(refused) => State {
+            refused: Some(refused),
+            ..State::default()
+        },
     };
     STATE.set(state);
 }
@@ -146,10 +149,16 @@ fn look() -> Result<State, String> {
             "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
         ])?;
     }
-    let Some(stat) = stat else { return Ok(State::default()) };
+    let Some(stat) = stat else {
+        return Ok(State::default());
+    };
 
     let (added, removed) = shortstat(&stat);
-    Ok(State { added, removed, refused: None })
+    Ok(State {
+        added,
+        removed,
+        refused: None,
+    })
 }
 
 /// The two numbers out of ` 3 files changed, 127 insertions(+), 14 deletions(-)`.
@@ -164,7 +173,9 @@ fn shortstat(line: &str) -> (u32, u32) {
     let mut removed = 0;
     let mut words = line.split_whitespace().peekable();
     while let Some(word) = words.next() {
-        let Ok(count) = word.parse::<u32>() else { continue };
+        let Ok(count) = word.parse::<u32>() else {
+            continue;
+        };
         match words.peek() {
             Some(next) if next.starts_with("insertion") => added = count,
             Some(next) if next.starts_with("deletion") => removed = count,

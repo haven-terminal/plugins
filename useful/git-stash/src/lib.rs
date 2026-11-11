@@ -106,7 +106,10 @@ impl Plugin for GitStash {
 fn refresh() {
     let state = match look() {
         Ok(state) => state,
-        Err(refused) => State { refused: Some(refused), ..State::default() },
+        Err(refused) => State {
+            refused: Some(refused),
+            ..State::default()
+        },
     };
     STATE.set(state);
 }
@@ -118,10 +121,20 @@ fn look() -> Result<State, String> {
     // One command, and it answers "not a repository", "never stashed"
     // and "three stashed" all three: the first two fail, and failing is
     // how the plugin learns to stay quiet.
-    let counted =
-        git(&["git", "-C", cwd.as_str(), "rev-list", "--count", "--walk-reflogs", "refs/stash"])?;
+    let counted = git(&[
+        "git",
+        "-C",
+        cwd.as_str(),
+        "rev-list",
+        "--count",
+        "--walk-reflogs",
+        "refs/stash",
+    ])?;
     let stashes = counted.and_then(|out| out.trim().parse().ok()).unwrap_or(0);
-    Ok(State { stashes, refused: None })
+    Ok(State {
+        stashes,
+        refused: None,
+    })
 }
 
 /// Run `git`, keeping the host's refusal distinct from git's own answer.

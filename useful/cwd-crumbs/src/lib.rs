@@ -45,7 +45,9 @@ struct Crumbs;
 
 impl Plugin for Crumbs {
     fn render() -> Vec<Run> {
-        let Some(pane) = focused() else { return Vec::new() };
+        let Some(pane) = focused() else {
+            return Vec::new();
+        };
         if pane.cwd.trim().is_empty() {
             return Vec::new();
         }
@@ -70,7 +72,14 @@ fn crumbs(cwd: &str) -> (String, String) {
 
     let Some((leaf, ancestors)) = parts.split_last() else {
         // Nothing but the prefix: `/` itself, or home exactly.
-        return (String::new(), if prefix.is_empty() { "/".into() } else { prefix.into() });
+        return (
+            String::new(),
+            if prefix.is_empty() {
+                "/".into()
+            } else {
+                prefix.into()
+            },
+        );
     };
 
     let mut head = String::from(prefix);

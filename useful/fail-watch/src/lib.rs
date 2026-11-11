@@ -41,12 +41,15 @@ haven_plugin_api::plugin!(FailWatch);
 struct FailWatch;
 
 /// Commands for which exit 1 is an answer rather than a fault.
-const ONE_MEANS_NO: &[&str] =
-    &["grep", "egrep", "fgrep", "rg", "ag", "ack", "diff", "cmp", "test", "[", "git-diff"];
+const ONE_MEANS_NO: &[&str] = &[
+    "grep", "egrep", "fgrep", "rg", "ag", "ack", "diff", "cmp", "test", "[", "git-diff",
+];
 
 impl Plugin for FailWatch {
     fn on_event(event: Event) -> Vec<Command> {
-        let Event::CommandEnded(end) = event else { return Vec::new() };
+        let Event::CommandEnded(end) = event else {
+            return Vec::new();
+        };
         let name = program(&end.command);
         match why(end.status, &name) {
             Some(reason) => vec![Command::Notice(format!("{name}: {reason}"))],

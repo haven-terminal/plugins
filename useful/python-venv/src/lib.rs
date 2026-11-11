@@ -56,8 +56,12 @@ struct Venv;
 
 impl Plugin for Venv {
     fn render() -> Vec<Run> {
-        let Some(pane) = focused() else { return Vec::new() };
-        let Some(name) = guess(&pane.cwd) else { return Vec::new() };
+        let Some(pane) = focused() else {
+            return Vec::new();
+        };
+        let Some(name) = guess(&pane.cwd) else {
+            return Vec::new();
+        };
         vec![dim("venv:"), plain(name)]
     }
 }
@@ -68,7 +72,9 @@ fn guess(cwd: &str) -> Option<String> {
 
     // The last marker, not the first: a path can hold several, and the
     // innermost is the one being worked in.
-    let at = parts.iter().rposition(|p| HERE.contains(p) || INSIDE.contains(p))?;
+    let at = parts
+        .iter()
+        .rposition(|p| HERE.contains(p) || INSIDE.contains(p))?;
     let marker = parts[at];
 
     let name = if INSIDE.contains(&marker) {

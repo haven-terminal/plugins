@@ -47,14 +47,19 @@ const LAST: &str = "last";
 
 impl Plugin for CommandTimer {
     fn on_event(event: Event) -> Vec<Command> {
-        let Event::CommandEnded(end) = event else { return Vec::new() };
+        let Event::CommandEnded(end) = event else {
+            return Vec::new();
+        };
         if end.millis < WORTH_SAYING {
             return Vec::new();
         }
         let took = duration(end.millis);
         vec![
             Command::Notice(format!("{} took {took}", short(&end.command))),
-            Command::Remember(Remembered { key: LAST.into(), value: took }),
+            Command::Remember(Remembered {
+                key: LAST.into(),
+                value: took,
+            }),
         ]
     }
 
